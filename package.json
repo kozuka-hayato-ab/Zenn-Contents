@@ -1,0 +1,23 @@
+{
+  "name": "zenn-contents",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kozuka-hayato-ab/Zenn-Contents.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kozuka-hayato-ab/Zenn-Contents/issues"
+  },
+  "homepage": "https://github.com/kozuka-hayato-ab/Zenn-Contents#readme",
+  "keywords": [],
+  "description": "",
+  "dependencies": {
+    "zenn-cli": "^0.1.59"
+  }
+}
