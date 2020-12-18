@@ -3,11 +3,11 @@ title: "Master Memory事始め(個人開発編)"
 emoji: "😎"
 type: "tech" # tech: 技術記事 / idea: アイデア
 topics: [Unity, MasterMemory, csharp]
-published: false
+published: true
 ---
 
 [「Applibot Advent Calendar 2020」](https://qiita.com/advent-calendar/2020/applibot) 18日目の記事になります。
-前日は [@Nakamuro-unl](https://qiita.com/Nakamuro-unl) さんの[temp]という記事でした!
+前日は [@Nakamuro-unl](https://qiita.com/Nakamuro-unl) さんの[1年限定運営アプリゲーム「SEVEN's CODE」の開発思想について](https://qiita.com/Nakamuro-unl/items/adb6706f0ea732fa7a46)という記事でした!
 
 :::details 目次(クリックすると展開されます)
 <!-- TOC -->
@@ -26,8 +26,12 @@ published: false
     - [例](#例-1)
   - [MessagePackのジェネレータ](#messagepackのジェネレータ)
     - [例](#例-2)
+- [閑話休題](#閑話休題)
 - [マスタバイナリ作成](#マスタバイナリ作成)
-  - [CSVの用意](#csvの用意)
+  - [Unity内でマスタデータを作成する](#unity内でマスタデータを作成する)
+    - [例](#例-3)
+- [Unity側でマスタデータを読み取る処理](#unity側でマスタデータを読み取る処理)
+- [まとめ](#まとめ)
 - [付録](#付録)
 - [参考記事](#参考記事)
 
@@ -35,17 +39,17 @@ published: false
 :::
 
 ## はじめに
-本記事では[Master Memory](https://github.com/Cysharp/MasterMemory)を個人開発で作成したときのUnity側マスタデータキャッシュについて使い方等を紹介していきます。
+本記事では[Master Memory](https://github.com/Cysharp/MasterMemory)を個人開発で使用したときのUnity側マスタデータキャッシュについて使い方等を紹介していきます。
 
 ## 概要
-MasterMemoryはマスターデータの管理用途を主眼に置いた、読み取り専用のインメモリデータベースです。
+MasterMemoryはマスターデータの管理を主眼に置いた、読み取り専用のインメモリデータベースです。
 採用のメリットデメリットについては[参考記事](#参考記事)をご覧ください。
 
 ## 実行環境
 - OS: macOS 10.15.6 
 - Unity: 2020.1.0.f1
 ## 準備
-MasterMemoryとMasterMemory内部で用いられているMessagePackのUnityPackageとGeneratorが入っているzipをダウンロードします。
+MasterMemoryとMessagePackを導入していきます
 
 ### MasterMemoryの導入
 [Cysharp/MasterMemory](https://github.com/Cysharp/MasterMemory/releases)
@@ -53,8 +57,8 @@ MasterMemoryとMasterMemory内部で用いられているMessagePackのUnityPack
 **MasterMemory.Unity.unitypackage**
 Unity内部で必要になります。
 **MasterMemory.Generator.zip**
-dotnet-toolsを用いる場合は不要にになります。
-dotnetでの導入手順は付録のGitHubにて説明予定です。
+dotnet-toolsを用いる場合は不要になります。
+dotnetでの導入手順は付録のGitHubにて説明します。
 
 ```zip解凍後のディレクトリ
 MasterMemory.Generator.zip
@@ -68,7 +72,7 @@ MasterMemory.Generator.zip
 
 ### MessagePackの導入
 [neuecc/MessagePack-CSharp](https://github.com/neuecc/MessagePack-CSharp/releases)
-上記のページにアクセスして、下記の2つのファイルをダウンロードします
+上記のページにアクセスして、下記の2つのファイルをダウンロードします。
 **MessagePack.Unity.2.1.115.unitypackage**
 Unity内部で必要になります。
 **mpc.zip**
@@ -100,8 +104,7 @@ using MasterMemory;
 using MessagePack;
 
 /// <summary>
-/// MCharacterテーブル
-/// ※自動生成コードのため直接編集不可
+/// MPokemonテーブル
 /// </summary>
 [MemoryTable("m_pokemon"), MessagePackObject(true)]
 public partial class MPokemon
@@ -139,8 +142,7 @@ using MasterMemory;
 using MessagePack;
 
 /// <summary>
-/// MCharacterテーブル
-/// ※自動生成コードのため直接編集不可
+/// MPokemonテーブル
 /// </summary>
 [MemoryTable("m_pokemon"), MessagePackObject]
 public partial class MPokemon
@@ -172,7 +174,7 @@ public partial class MPokemon
 }
 ```
 :::
-このテーブル定義クラスはpumlやjsonから自動生成されるべきものですが、今回は**個人開発**を隠蓑にして割愛させていただきます。
+このテーブル定義クラスはPlantUMLやjsonから自動生成されるべきものですが、今回は**個人開発**を隠蓑にして割愛させていただきます。
 
 #### アノテーション説明
 **[MemoryTable (“m_pokemon”)]** : MasterMemoryのテーブルとして読み取るためのアノテーション。
@@ -259,7 +261,7 @@ ProcessStartInfo内のArgumentsにてオプションを設定することがで�
 ジェネレータを起動するコード例を以下に示します。
 #### 例
 :::details MessagePackGenerator.cs
-```
+```csharp: MessagePackGenerator.cs
 using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
@@ -325,8 +327,155 @@ ProcessStartInfo内のArgumentsにてオプションを設定することがで�
 **-o** (必須)アウトプットディレクトリの指定。Generatorによる自動生成コードの出力先ディレクトリを指定してください。
 **-n** (必須)出力したクラスの名前空間指定です。
 
+## 閑話休題
+UnityでMasterMemoryを扱うための準備は一通り終わりです。
+今後の流れとしてはマスタデータのバイナリを作成し、Unity側で受け口となるコードを書いたらMasterMemoryを使えるようになります。
+
 ## マスタバイナリ作成
-### CSVの用意
+本来、CSVから生成するのが理想ですが、個人開発のためUnity内でマスタデータのバイナリを作成します。
+
+### Unity内でマスタデータを作成する
+Editorより、マスタデータを直に入力してマスタデータを作成します。
+#### 例
+:::details マスタデータバイナリ作成
+```csharp: MasterDataGenerator.cs
+using System.IO;
+using MessagePack.Resolvers;
+// MasterMemory.Generatorにて生成時にNameSpaceをGeneratedで指定
+using Generated;
+using MessagePack;
+using UnityEditor;
+using UnityEngine;
+
+public static class MasterDataGenerator
+{
+    [MenuItem("MasterMemory/MasterDataGenerator")]
+    static void BuildMasterData()
+    {
+        // MessagePackのResolverを設定
+        try
+        {
+            StaticCompositeResolver.Instance.Register
+            (
+                new IFormatterResolver[]
+                {
+                    MasterMemoryResolver.Instance,
+                    GeneratedResolver.Instance,
+                    StandardResolver.Instance,
+                });
+            var options = MessagePackSerializerOptions.Standard.WithResolver(StaticCompositeResolver.Instance);
+            MessagePackSerializer.DefaultOptions = options;
+        }
+        catch
+        {
+        }
+
+        // 本題のMasterデータ作成はこちら
+        var builder = new DatabaseBuilder();
+        builder.Append(new MPokemon[]
+        {
+            new MPokemon(Id: 1, DisplayName: "フシギダネ", Hp: 45, Attack: 49, Defense: 49, SpecialAttack: 65,
+                SpecialDefence: 65, Speed: 45),
+            new MPokemon(Id: 6, DisplayName: "リザードン", Hp: 78, Attack: 84, Defense: 78, SpecialAttack: 109,
+                SpecialDefence: 85, Speed: 100),
+        });
+
+        byte[] data = builder.Build();
+        Debug.Log("ConvertToJson : " + MessagePackSerializer.ConvertToJson(data));
+        var resourcesDir = $"{Application.dataPath}/Resources";
+        Directory.CreateDirectory(resourcesDir);
+        var filename = "/master-data.bytes";
+
+        using (var fs = new FileStream(resourcesDir + filename, FileMode.Create))
+        {
+            fs.Write(data, 0, data.Length);
+        }
+
+        Debug.Log($"Write byte[] to: {resourcesDir + filename}");
+
+        AssetDatabase.Refresh();
+    }
+}
+```
+:::
+本コードではマスタデータを配列として入力し、バイナリとして書き出しています。
+バイナリのフォーマットはMessagePackです。
+そのため、MessagePackのResolverを登録する必要があります。
+
+## Unity側でマスタデータを読み取る処理
+マスタデータで読み取る側でもMessagePackのResolverを登録する必要があります。
+また、マスタデータの実バイナリはResourcesに格納されているため、持ってくる必要もあります。
+Resolverの登録例を以下に示します。
+:::details MessagePackResolverの登録
+```csharp: Initializer.cs
+using Generated;
+using MessagePack.Resolvers;
+using MessagePack;
+using UnityEngine;
+ 
+public static class Initializer {
+    [RuntimeInitializeOnLoadMethod (RuntimeInitializeLoadType.BeforeSceneLoad)]
+    public static void Initialize () {
+        StaticCompositeResolver.Instance.Register
+        (
+            MasterMemoryResolver.Instance,
+            GeneratedResolver.Instance,
+            StandardResolver.Instance
+        );
+ 
+        var options = MessagePackSerializerOptions.Standard.WithResolver( StaticCompositeResolver.Instance );
+        MessagePackSerializer.DefaultOptions = options;
+    }
+}
+```
+:::
+
+また、実際に使う一例を示します。（持ってくることだけを考えたコードなのでそのまま使うべきではないです）
+
+:::details マスタデータをダウンロードするクラス
+```csharp: MasterDownloader.cs
+using UnityEngine;
+using Generated;
+
+// TODO: よしなに変更してください
+public class MasterDownloader
+{
+    private static MemoryDatabase _db;
+
+    public static MemoryDatabase DB => _db;
+
+    public static void DownloadMasterData()
+    {
+        _db = new MemoryDatabase((Resources.Load("master-data") as TextAsset).bytes);
+    }
+}
+```
+:::
+実際はs3などにあるマスタデータをダウンロードするクラスです。
+今回はResourcesにバイナリを置いているためクラスにするまでもありません。
+
+:::details 実際使うときのクラス
+```csharp: MasterTest.cs
+using UnityEngine;
+
+public class MasterTest : MonoBehaviour
+{
+    // Start is called before the first frame update
+    void Start()
+    {
+        MasterDownloader.DownloadMasterData();
+        MPokemon temp = MasterDownloader.DB.MPokemonTable.FindById(6);
+        Debug.Log(temp.ToString());
+    }
+}
+```
+:::
+**[PrimaryKey]** アノテーションなどで設定したプロパティで検索をかけることができます。
+
+## まとめ
+今回はMasterMemoryの導入について執筆させていただきました。
+MasterMemoryによってマスタデータキャッシュ基盤の作成が楽になりました。
+テーブル定義の自動生成や、CSVからのバイナリ作成ツールについては今後記事として書こうと思います。
 
 ## 付録
 [MasterMemoryTest - github](https://github.com/kozuka-hayato-ab/MasterMemoryTest)
